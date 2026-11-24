@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#111317">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Daybook</title>
+<link rel="manifest" href="./manifest.json">
+<link rel="icon" href="./icon-192.png">
+<link rel="apple-touch-icon" href="./icon-192.png">
+<style>
+:root{
+  --bg:#111317; --card:#1b1f26; --card2:#232833; --line:#30374480;
+  --edge:#303744; --text:#e7eaf0; --dim:#98a1b2; --faint:#626c7e;
+  --accent:#7aa2f7; --warm:#e0af68; --ok:#73c991;
+}
+*{box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{background:var(--bg); color:var(--text); font-family:-apple-system,'Segoe UI',Roboto,'Noto Sans',sans-serif; font-size:16px; overscroll-behavior-y:none; overflow-x:hidden}
+#root{max-width:520px; margin:0 auto; min-height:100%; display:none}
+#login{max-width:420px; margin:0 auto; padding:60px 20px}
+.screen{padding:16px 16px 120px; display:none}
+.screen.active{display:block}
+h1{font-size:22px; font-weight:800; letter-spacing:-.3px}
+h2{font-size:12px; font-weight:700; color:var(--dim); margin:22px 0 10px; text-transform:uppercase; letter-spacing:.8px}
+.sub{color:var(--dim); font-size:14px; line-height:1.5; margin-top:6px}
+.card{background:var(--card); border:1px solid var(--edge); border-radius:14px; padding:14px; margin-bottom:10px}
+.card.flat{background:var(--card2)}
+textarea,input[type=text],input[type=password],input[type=date],input[type=time]{
+  width:100%; background:var(--card2); border:1px solid var(--edge); color:var(--text);
+  border-radius:10px; padding:13px; font-size:16px; font-family:inherit; resize:none}
+textarea{min-height:84px; line-height:1.45}
+button{font-family:inherit; font-size:16px; cursor:pointer; border:none}
+.btn{width:100%; background:var(--accent); color:#0d1117; border-radius:11px; padding:14px; font-weight:700; margin-top:10px}
+.btn.ghost{background:var(--card2); color:var(--text); border:1px solid var(--edge)}
+.btn.warm{background:var(--warm); color:#1a1205}
+.btn.sm{width:auto; padding:9px 14px; font-size:14px; border-radius:9px}
+.row{display:flex; gap:8px; margin-top:10px}
+.row .btn{margin-top:0}
+.q{font-size:19px; font-weight:700; line-height:1.35; margin-bottom:4px}
+.slab{display:flex; justify-content:space-between; align-items:baseline; margin-bottom:7px}
+.slab span:first-child{font-size:14px; color:var(--dim)}
+.slab span:last-child{font-size:19px; font-weight:800; color:var(--accent)}
+input[type=range]{width:100%; -webkit-appearance:none; appearance:none; height:38px; background:transparent}
+input[type=range]::-webkit-slider-runnable-track{height:6px; background:var(--edge); border-radius:3px}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none; width:32px; height:32px; border-radius:50%; background:var(--accent); margin-top:-13px; border:3px solid var(--bg)}
+input[type=range]::-moz-range-track{height:6px; background:var(--edge); border-radius:3px}
+input[type=range]::-moz-range-thumb{width:28px; height:28px; border-radius:50%; background:var(--accent); border:3px solid var(--bg)}
+.field{margin-bottom:16px}
+.lbl{font-size:13px; color:var(--dim); margin-bottom:6px; display:block}
+.tabs{position:fixed; bottom:0; left:0; right:0; background:#0d1014f2; border-top:1px solid var(--edge);
+  display:flex; max-width:520px; margin:0 auto; backdrop-filter:blur(12px); padding-bottom:env(safe-area-inset-bottom)}
+.tabs button{flex:1; background:none; color:var(--faint); padding:13px 4px 15px; font-size:12px; font-weight:600}
+.tabs button.on{color:var(--accent)}
+.tabs .dot{display:block; font-size:19px; margin-bottom:3px; line-height:1}
+.item{background:var(--card); border:1px solid var(--edge); border-radius:13px; padding:13px; margin-bottom:9px}
+.item .body{font-size:15px; line-height:1.45}
+.meta{font-size:12px; color:var(--faint); margin-top:7px; display:flex; gap:11px; flex-wrap:wrap}
+.pill{display:inline-block; background:var(--card2); border:1px solid var(--edge); color:var(--dim);
+  border-radius:20px; padding:3px 10px; font-size:11px; font-weight:600}
+.empty{text-align:center; color:var(--faint); padding:38px 16px; font-size:15px; line-height:1.55}
+.count{font-size:46px; font-weight:800; letter-spacing:-2px; line-height:1}
+.count-lbl{font-size:13px; color:var(--dim); margin-top:3px}
+.err{background:#3b1f24; border:1px solid #6b3340; color:#f8aeb8; border-radius:9px; padding:11px; font-size:14px; margin-top:10px; display:none}
+.todo{display:flex; align-items:flex-start; gap:11px; padding:12px 0; border-bottom:1px solid var(--line)}
+.todo:last-child{border-bottom:none}
+.tick{width:23px; height:23px; border-radius:6px; border:2px solid var(--edge); background:var(--card2); flex-shrink:0; margin-top:1px}
+.todo .tx{flex:1; font-size:15px; line-height:1.4}
+.hint{font-size:13px; color:var(--faint); line-height:1.5; margin-top:8px}
+.hr{height:1px; background:var(--line); margin:20px 0}
+.topline{display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:2px}
+</style>
+</head>
+<body>
+
+<div id="login">
+  <h1>Daybook</h1>
+  <p class="sub">Sign in to continue.</p>
+  <div style="margin-top:22px">
+    <div class="field"><label class="lbl">Email</label><input type="text" id="li-email" autocomplete="username"></div>
+    <div class="field"><label class="lbl">Password</label><input type="password" id="li-pass" autocomplete="current-password"></div>
+    <button class="btn" data-action="login">Sign in</button>
+    <div class="err" id="li-err"></div>
+  </div>
+</div>
+
+<div id="root">
+
+  <div class="screen active" id="s-entry">
+    <h1>New entry</h1>
+
+    <div id="e1">
+      <p class="sub">One line. Don't explain it, just name it.</p>
+      <div style="margin-top:14px">
+        <textarea id="e-body" placeholder="What turned up?"></textarea>
+        <button class="btn" data-action="e-next">Next</button>
+      </div>
+    </div>
+
+    <div id="e2" style="display:none">
+      <div class="card">
+        <div class="q">Can I do something about this today?</div>
+        <p class="hint" style="margin:8px 0 0">Only one of these. If you can act, it is a task. If you cannot, it gets parked and scored.</p>
+        <p class="hint" id="e-echo" style="color:var(--text)"></p>
+      </div>
+      <button class="btn" data-action="e-now">Yes &mdash; I'll do it now</button>
+      <button class="btn ghost" data-action="e-todo">Yes &mdash; add it to my actions</button>
+      <button class="btn ghost" data-action="e-park">No &mdash; park it until tonight</button>
+      <button class="btn ghost" data-action="e-back1" style="margin-top:18px">Back</button>
+    </div>
+
+    <div id="e-todo-f" style="display:none">
+      <h2>Next action</h2>
+      <p class="hint" style="margin:0 0 10px">Not the worry &mdash; the next physical step.</p>
+      <textarea id="e-todo-text" placeholder="Call the agent about..."></textarea>
+      <button class="btn" data-action="e-todo-save">Add to list</button>
+      <button class="btn ghost" data-action="e-back">Back</button>
+    </div>
+
+    <div id="e-pred-f" style="display:none">
+      <h2>Score it</h2>
+      <div class="card flat">
+        <div class="slab"><span>Chance it happens</span><span id="e-p-out">50%</span></div>
+        <input type="range" id="e-p" min="0" max="100" step="5" value="50">
+      </div>
+      <div class="card flat">
+        <div class="slab"><span>How bad if it does</span><span id="e-s-out">5</span></div>
+        <input type="range" id="e-s" min="0" max="10" step="1" value="5">
+      </div>
+      <div class="field">
+        <label class="lbl">Known either way by</label>
+        <input type="date" id="e-date">
+        <p class="hint">When reality settles this &mdash; not when you next want to think about it.</p>
+      </div>
+      <button class="btn" data-action="e-park-save">Park it</button>
+      <button class="btn ghost" data-action="e-back">Back</button>
+    </div>
+
+    <div id="e-done" style="display:none">
+      <div class="empty" id="e-done-msg"></div>
+      <button class="btn" data-action="e-reset">New entry</button>
+    </div>
+  </div>
+
+  <div class="screen" id="s-due">
+    <h1>Due</h1>
+    <p class="sub">Items whose date has passed. Nothing else is shown here.</p>
+    <div id="due-list" style="margin-top:16px"></div>
+    <div class="hr"></div>
+    <h2>Actions</h2>
+    <div class="card" id="todo-list"></div>
+    <div class="hr"></div>
+    <div class="card" style="text-align:center">
+      <div class="count" id="parked-count">0</div>
+      <div class="count-lbl">parked, waiting for tonight</div>
+    </div>
+  </div>
+
+  <div class="screen" id="s-review">
+    <div class="topline"><h1>Review</h1><span class="pill">19:00</span></div>
+    <p class="sub">Heaviest first. Take the top two or three to the floor. Clear the rest unread.</p>
+    <div id="rv-list" style="margin-top:16px"></div>
+    <div id="rv-chain" style="display:none">
+      <div class="hr"></div>
+      <h2>And then what?</h2>
+      <p class="hint" style="margin:0 0 10px; color:var(--text)" id="rv-chain-echo"></p>
+      <textarea id="rv-chain-text" placeholder="Then I would... and then what? Keep going until you hit something you would just deal with."></textarea>
+      <button class="btn" data-action="rv-chain-save">Save and close it</button>
+      <button class="btn ghost" data-action="rv-chain-cancel">Cancel</button>
+    </div>
+    <div id="rv-foot" style="display:none">
+      <div class="hr"></div>
+      <button class="btn warm" data-action="rv-finish">Finish review</button>
+      <p class="hint">Cleared items still get scored when their date comes.</p>
+    </div>
+  </div>
+
+  <div class="screen" id="s-set">
+    <h1>Settings</h1>
+    <div class="card" style="margin-top:16px"><p class="sub" id="set-email"></p></div>
+    <h2>Review time</h2>
+    <div class="card">
+      <input type="time" id="set-time" value="19:00" disabled>
+      <p class="hint">Fixed at 19:00 Dubai. Making it adjustable is Phase 3.</p>
+    </div>
+    <h2>Reminders</h2>
+    <div class="card">
+      <p class="sub" id="push-state">Checking&hellip;</p>
+      <button class="btn" data-action="push-on" id="push-btn" style="display:none">Turn on reminders</button>
+      <p class="hint">One at review time. Nothing else &mdash; the app never pings you about an open item.</p>
+    </div>
+    <h2>This week</h2>
+    <div class="card" id="set-stats"></div>
+    <button class="btn ghost" data-action="signout" style="margin-top:22px">Sign out</button>
+  </div>
+
+  <nav class="tabs">
+    <button data-tab="s-entry" class="on"><span class="dot">&#43;</span>Entry</button>
+    <button data-tab="s-due"><span class="dot">&#9655;</span>Due</button>
+    <button data-tab="s-review"><span class="dot">&#9634;</span>Review</button>
+    <button data-tab="s-set"><span class="dot">&#9881;</span>Settings</button>
+  </nav>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script>
+var SB_URL = 'https://vvubcbelecmonlavnxpw.supabase.co';
+var SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ2dWJjYmVsZWNtb25sYXZueHB3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg2NjYyNDgsImV4cCI6MjEwNDI0MjI0OH0.Dx8UescMMsP8_6MBuC_ZyG-Z_a66-EoIhqLfBOZaHRQ';
+var OWNER = 'c64d31ef-3105-40ee-86dd-99d73bb463e8';
+var VAPID_PUB = 'BFz5rso3fFlYxjPt02sOXlpyGoXO4b857FfjX0F1E3RQBEvarCtz5xqmzJ8qPbUxd1LKejDDiBDKZCSFxGP4fSU';
+var sb = supabase.createClient(SB_URL, SB_KEY);
+var swReg = null;
+
+var state = { uid:null, parked:[], due:[], todos:[], chainId:null, reviewed:0, chained:0, cleared:0 };
+
+function $(id){ return document.getElementById(id); }
+function esc(s){ var d = document.createElement('div'); d.textContent = s == null ? '' : String(s); return d.innerHTML; }
+function dstr(d){ return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0'); }
+function today(){ return dstr(new Date()); }
+function plusDays(n){ var d = new Date(); d.setDate(d.getDate()+n); return dstr(d); }
+function fmtDate(s){ if(!s) return ''; var p = s.split('-'); return p[2] + '/' + p[1]; }
+
+function show(id){
+  var sc = document.querySelectorAll('.screen');
+  for (var i=0;i<sc.length;i++) sc[i].classList.remove('active');
+  $(id).classList.add('active');
+  var tb = document.querySelectorAll('.tabs button');
+  for (var j=0;j<tb.length;j++) tb[j].classList.toggle('on', tb[j].getAttribute('data-tab') === id);
+  window.scrollTo(0,0);
+  if (id === 's-review') renderReview();
+  if (id === 's-due') renderDue();
+  if (id === 's-set') renderStats();
+}
+
+function eStep(which){
+  var ids = ['e1','e2','e-todo-f','e-pred-f','e-done'];
+  for (var i=0;i<ids.length;i++) $(ids[i]).style.display = ids[i] === which ? 'block' : 'none';
+}
+
+async function enter(){
+  var u = await sb.auth.getUser();
+  if (!u.data.user){ $('login').style.display='block'; return; }
+  if (u.data.user.id !== OWNER){
+    document.body.innerHTML = '<div style="padding:70px 22px; color:#98a1b2; font-family:-apple-system,sans-serif; text-align:center">Not available.</div>';
+    return;
+  }
+  state.uid = u.data.user.id;
+  $('set-email').textContent = 'Signed in as ' + u.data.user.email;
+  $('login').style.display='none';
+  $('root').style.display='block';
+  await loadAll();
+  eStep('e1');
+  routeFromQuery();
+  initPush();
+}
+
+async function doLogin(){
+  $('li-err').style.display='none';
+  var r = await sb.auth.signInWithPassword({ email: $('li-email').value.trim(), password: $('li-pass').value });
+  if (r.error){ $('li-err').textContent = r.error.message; $('li-err').style.display='block'; return; }
+  await enter();
+}
+
+async function loadAll(){
+  var rs = await Promise.all([
+    sb.from('dbk_entries').select('*').is('closed_at', null).is('chained_at', null).eq('cleared_unread', false).order('pred_severity', { ascending: false }),
+    sb.from('dbk_entries').select('*').is('closed_at', null).lte('resolution_date', today()).order('resolution_date'),
+    sb.from('dbk_todos').select('*').eq('done', false).order('created_at')
+  ]);
+  state.parked = rs[0].data || [];
+  state.due = rs[1].data || [];
+  state.todos = rs[2].data || [];
+  $('parked-count').textContent = state.parked.length;
+}
+
+function renderDue(){
+  var h = '';
+  if (!state.due.length){
+    h = '<div class="empty">Nothing due.<br>Open items stay hidden until their date.</div>';
+  } else {
+    for (var i=0;i<state.due.length;i++){
+      var e = state.due[i];
+      h += '<div class="item">';
+      h += '<div class="body">' + esc(e.body) + '</div>';
+      h += '<div class="meta"><span>said ' + (e.p_happens == null ? '?' : e.p_happens + '%') + '</span><span>severity ' + (e.pred_severity == null ? '?' : e.pred_severity) + '</span><span>due ' + fmtDate(e.resolution_date) + '</span></div>';
+      h += '<div class="row"><button class="btn sm ghost" data-action="close-no" data-id="' + e.id + '">Did not happen</button>';
+      h += '<button class="btn sm ghost" data-action="close-yes" data-id="' + e.id + '">It happened</button></div>';
+      h += '<div id="cl-' + e.id + '" style="display:none; margin-top:12px">';
+      h += '<div class="card flat"><div class="slab"><span>How bad was it actually</span><span id="as-out-' + e.id + '">5</span></div>';
+      h += '<input type="range" min="0" max="10" step="1" value="5" data-sev="' + e.id + '" id="as-' + e.id + '"></div>';
+      h += '<label class="lbl">What did you actually do about it?</label>';
+      h += '<textarea id="hn-' + e.id + '" placeholder="One line."></textarea>';
+      h += '<button class="btn sm" data-action="close-save" data-id="' + e.id + '" style="margin-top:10px">Close it</button></div>';
+      h += '</div>';
+    }
+  }
+  $('due-list').innerHTML = h;
+
+  var t = '';
+  if (!state.todos.length){
+    t = '<div class="empty" style="padding:18px">Nothing on the list.</div>';
+  } else {
+    for (var k=0;k<state.todos.length;k++){
+      var d = state.todos[k];
+      t += '<div class="todo" data-action="todo-done" data-id="' + d.id + '"><div class="tick"></div><div class="tx">' + esc(d.body) + '</div></div>';
+    }
+  }
+  $('todo-list').innerHTML = t;
+}
+
+function renderReview(){
+  var h = '';
+  if (!state.parked.length){
+    h = '<div class="empty">Nothing parked.<br>Either a quiet day, or you handled things at the door.</div>';
+    $('rv-foot').style.display = 'none';
+  } else {
+    for (var i=0;i<state.parked.length;i++){
+      var e = state.parked[i];
+      h += '<div class="item">';
+      h += '<div class="body">' + esc(e.body) + '</div>';
+      h += '<div class="meta"><span class="pill">severity ' + (e.pred_severity == null ? '?' : e.pred_severity) + '</span><span>' + (e.p_happens == null ? '' : e.p_happens + '% likely') + '</span><span>known by ' + fmtDate(e.resolution_date) + '</span></div>';
+      h += '<div class="row"><button class="btn sm ghost" data-action="rv-chain" data-id="' + e.id + '">Take it down</button>';
+      h += '<button class="btn sm ghost" data-action="rv-clear" data-id="' + e.id + '">Clear unread</button></div>';
+      h += '</div>';
+    }
+    $('rv-foot').style.display = 'block';
+  }
+  $('rv-list').innerHTML = h;
+  $('rv-chain').style.display = 'none';
+}
+
+function renderStats(){
+  var h = '<p class="sub">' + state.parked.length + ' parked &middot; ' + state.due.length + ' due &middot; ' + state.todos.length + ' open actions</p>';
+  h += '<p class="hint">Calibration and severity ratio arrive in Phase 4, once there are enough closed items to mean anything.</p>';
+  $('set-stats').innerHTML = h;
+}
+</script>
+<script>
+async function saveParked(){
+  var body = $('e-body').value.trim();
+  if (!body){ alert('Nothing to park - the entry text is empty.'); eStep('e1'); return; }
+  var r = await sb.from('dbk_entries').insert({
+    body: body,
+    p_happens: Number($('e-p').value),
+    pred_severity: Number($('e-s').value),
+    resolution_date: $('e-date').value || plusDays(7)
+  });
+  if (r.error){ alert('Could not save: ' + r.error.message); return; }
+  await loadAll();
+  $('e-done-msg').innerHTML = 'Parked: ' + esc(body) + '<br><span style="color:#626c7e">Hidden until tonight.</span>';
+  eStep('e-done');
+}
+
+async function saveTodo(){
+  var body = $('e-todo-text').value.trim();
+  if (!body){ alert('Write the next action first.'); return; }
+  var r = await sb.from('dbk_todos').insert({ body: body });
+  if (r.error){ alert('Could not save: ' + r.error.message); return; }
+  await loadAll();
+  $('e-done-msg').innerHTML = 'On the list: ' + esc(body) + '<br><span style="color:#626c7e">An action now, not a worry. Nothing to park.</span>';
+  eStep('e-done');
+}
+
+async function doChainSave(){
+  var txt = $('rv-chain-text').value.trim();
+  if (!txt || !state.chainId) return;
+  var r = await sb.from('dbk_entries').update({ chain_text: txt, chained_at: new Date().toISOString() }).eq('id', state.chainId);
+  if (r.error){ alert('Could not save: ' + r.error.message); return; }
+  state.chained++; state.reviewed++; state.chainId = null;
+  await loadAll(); renderReview();
+}
+
+async function doClear(id){
+  var r = await sb.from('dbk_entries').update({ cleared_unread: true }).eq('id', id);
+  if (r.error){ alert('Could not save: ' + r.error.message); return; }
+  state.cleared++; state.reviewed++;
+  await loadAll(); renderReview();
+}
+
+async function doFinish(){
+  await sb.from('dbk_sessions').upsert(
+    { on_date: today(), reviewed: state.reviewed, chained: state.chained, cleared: state.cleared },
+    { onConflict: 'user_id,on_date' }
+  );
+  state.reviewed = 0; state.chained = 0; state.cleared = 0;
+  await loadAll(); renderReview(); show('s-due');
+}
+
+async function doCloseSave(id, happened){
+  var patch = { closed_at: new Date().toISOString(), did_happen: happened };
+  if (happened){
+    patch.actual_severity = Number($('as-' + id).value);
+    patch.handled_note = $('hn-' + id).value.trim() || null;
+  }
+  var r = await sb.from('dbk_entries').update(patch).eq('id', id);
+  if (r.error){ alert('Could not save: ' + r.error.message); return; }
+  await loadAll(); renderDue();
+}
+
+async function doTodoDone(id){
+  var r = await sb.from('dbk_todos').update({ done: true, done_at: new Date().toISOString() }).eq('id', id);
+  if (r.error) return;
+  await loadAll(); renderDue();
+}
+
+function routeFromQuery(){
+  var s = new URLSearchParams(location.search).get('s');
+  if (s === 'review'){ show('s-review'); return; }
+  if (s === 'entry'){ show('s-entry'); var b = $('e-body'); if (b) b.focus(); }
+}
+
+function urlB64ToU8(b64){
+  var pad = new Array(((4 - b64.length % 4) % 4) + 1).join('=');
+  var s = (b64 + pad).replace(/-/g, '+').replace(/_/g, '/');
+  var raw = atob(s);
+  var out = new Uint8Array(raw.length);
+  for (var i = 0; i < raw.length; i++) out[i] = raw.charCodeAt(i);
+  return out;
+}
+
+function pushState(msg, offerBtn){
+  var el = $('push-state'); if (el) el.textContent = msg;
+  var b = $('push-btn'); if (b) b.style.display = offerBtn ? 'block' : 'none';
+}
+
+async function storeSub(sub){
+  var j = sub.toJSON();
+  if (!j || !j.keys) return;
+  await sb.from('dbk_push_subs').upsert(
+    { endpoint: j.endpoint, p256dh: j.keys.p256dh, auth_key: j.keys.auth },
+    { onConflict: 'endpoint' }
+  );
+}
+
+async function initPush(){
+  if (!('serviceWorker' in navigator) || !('PushManager' in window)){
+    pushState('This browser cannot do reminders.', false); return;
+  }
+  try {
+    swReg = await navigator.serviceWorker.register('./sw.js');
+    await navigator.serviceWorker.ready;
+    var sub = await swReg.pushManager.getSubscription();
+    if (sub){ await storeSub(sub); pushState('Reminders are on.', false); return; }
+    if (Notification.permission === 'denied'){ pushState('Blocked in browser settings.', false); return; }
+    pushState('Reminders are off.', true);
+  } catch (e){
+    pushState('Could not set up: ' + e.message, false);
+  }
+}
+
+async function turnPushOn(){
+  if (!swReg){ pushState('Service worker not ready.', true); return; }
+  var perm = await Notification.requestPermission();
+  if (perm !== 'granted'){ pushState('Permission not granted.', false); return; }
+  try {
+    var sub = await swReg.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlB64ToU8(VAPID_PUB)
+    });
+    await storeSub(sub);
+    pushState('Reminders are on.', false);
+  } catch (e){
+    pushState('Could not subscribe: ' + e.message, true);
+  }
+}
+
+document.addEventListener('input', function(ev){
+  var t = ev.target;
+  if (t.id === 'e-p') $('e-p-out').textContent = t.value + '%';
+  if (t.id === 'e-s') $('e-s-out').textContent = t.value;
+  var sev = t.getAttribute('data-sev');
+  if (sev) $('as-out-' + sev).textContent = t.value;
+});
+
+document.addEventListener('click', function(ev){
+  var el = ev.target.closest('[data-action],[data-tab]');
+  if (!el) return;
+  var tab = el.getAttribute('data-tab');
+  if (tab){ show(tab); return; }
+  var a = el.getAttribute('data-action');
+  var id = el.getAttribute('data-id');
+
+  if (a === 'login') doLogin();
+  if (a === 'push-on') turnPushOn();
+  if (a === 'signout') sb.auth.signOut().then(function(){ location.reload(); });
+
+  if (a === 'e-next'){
+    if (!$('e-body').value.trim()) return;
+    $('e-echo').textContent = $('e-body').value.trim();
+    eStep('e2');
+  }
+  if (a === 'e-back') eStep('e2');
+  if (a === 'e-back1') eStep('e1');
+  if (a === 'e-now'){
+    $('e-done-msg').innerHTML = 'Then go and do it.<br><span style="color:#626c7e">Nothing recorded - it was a task, not a worry.</span>';
+    eStep('e-done');
+  }
+  if (a === 'e-todo'){ $('e-todo-text').value = $('e-body').value.trim(); eStep('e-todo-f'); }
+  if (a === 'e-todo-save') saveTodo();
+  if (a === 'e-park'){ $('e-date').value = plusDays(7); eStep('e-pred-f'); }
+  if (a === 'e-park-save') saveParked();
+  if (a === 'e-reset'){
+    $('e-body').value = ''; $('e-p').value = 50; $('e-p-out').textContent = '50%';
+    $('e-s').value = 5; $('e-s-out').textContent = '5'; eStep('e1');
+  }
+
+  if (a === 'rv-chain'){
+    state.chainId = id;
+    for (var i=0;i<state.parked.length;i++) if (state.parked[i].id === id) $('rv-chain-echo').textContent = state.parked[i].body;
+    $('rv-chain-text').value = '';
+    $('rv-chain').style.display = 'block';
+    $('rv-chain').scrollIntoView({ behavior:'smooth', block:'center' });
+  }
+  if (a === 'rv-chain-cancel'){ state.chainId = null; $('rv-chain').style.display = 'none'; }
+  if (a === 'rv-chain-save') doChainSave();
+  if (a === 'rv-clear') doClear(id);
+  if (a === 'rv-finish') doFinish();
+
+  if (a === 'close-no') doCloseSave(id, false);
+  if (a === 'close-yes') $('cl-' + id).style.display = 'block';
+  if (a === 'close-save') doCloseSave(id, true);
+  if (a === 'todo-done') doTodoDone(id);
+});
+
+enter();
+</script>
+</body>
+</html>
