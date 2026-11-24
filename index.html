@@ -429,11 +429,14 @@ function pushState(msg, offerBtn){
 
 async function storeSub(sub){
   var j = sub.toJSON();
-  if (!j || !j.keys) return;
-  await sb.from('dbk_push_subs').upsert(
-    { endpoint: j.endpoint, p256dh: j.keys.p256dh, auth_key: j.keys.auth },
+  if (!j || !j.keys){ return 'subscription had no keys'; }
+  var u = await sb.auth.getUser();
+  if (!u.data.user){ return 'not signed in'; }
+  var r = await sb.from('dbk_push_subs').upsert(
+    { user_id: u.data.user.id, endpoint: j.endpoint, p256dh: j.keys.p256dh, auth_key: j.keys.auth },
     { onConflict: 'endpoint' }
   );
+  return r.error ? ('save failed: ' + r.error.message) : null;
 }
 
 async function initPush(){
@@ -444,7 +447,11 @@ async function initPush(){
     swReg = await navigator.serviceWorker.register('./sw.js');
     await navigator.serviceWorker.ready;
     var sub = await swReg.pushManager.getSubscription();
-    if (sub){ await storeSub(sub); pushState('Reminders are on.', false); return; }
+    if (sub){
+      var e1 = await storeSub(sub);
+      pushState(e1 ? e1 : 'Reminders are on.', !!e1);
+      return;
+    }
     if (Notification.permission === 'denied'){ pushState('Blocked in browser settings.', false); return; }
     pushState('Reminders are off.', true);
   } catch (e){
@@ -461,8 +468,8 @@ async function turnPushOn(){
       userVisibleOnly: true,
       applicationServerKey: urlB64ToU8(VAPID_PUB)
     });
-    await storeSub(sub);
-    pushState('Reminders are on.', false);
+    var e2 = await storeSub(sub);
+    pushState(e2 ? e2 : 'Reminders are on.', !!e2);
   } catch (e){
     pushState('Could not subscribe: ' + e.message, true);
   }
